@@ -485,14 +485,14 @@ class PasswordChangeMixin(Output):
     A new token and refresh token are sent. User must be verified.
     """
 
+    refresh_token = graphene.Field(graphene.String)
+    token = graphene.Field(graphene.String)
+
     form = PasswordChangeForm
 
     @classmethod
     def Field(cls, *args, **kwargs):
-        if using_refresh_tokens():
-            cls._meta.fields["refresh_token"] = graphene.Field(graphene.String)
-        cls._meta.fields["token"] = graphene.Field(graphene.String)
-        return super().Field(*args, **kwargs)
+      return super().Field(*args, **kwargs)
 
     @classmethod
     @token_auth

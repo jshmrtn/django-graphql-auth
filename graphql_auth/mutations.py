@@ -1,6 +1,9 @@
 import graphene
 import graphql_jwt
 
+from graphql_jwt.decorators import token_auth
+from django.contrib.auth import get_user_model
+
 from .bases import MutationMixin, DynamicArgsMixin
 from .mixins import (
     RegisterMixin,
@@ -102,19 +105,34 @@ class PasswordReset(
     _required_args = ["token", "new_password1", "new_password2"]
 
 
+class CustomJSONWebTokenMutation(graphene.Mutation):
+    class Meta:
+        abstract = True
+
+    @classmethod
+    @token_auth
+    def mutate(cls, root, info, **kwargs):
+        return cls.resolve(root, info, **kwargs)
+
+
 class ObtainJSONWebToken(
-    MutationMixin, ObtainJSONWebTokenMixin, graphql_jwt.JSONWebTokenMutation
+    MutationMixin, ObtainJSONWebTokenMixin, CustomJSONWebTokenMutation
 ):
+    
+    class Arguments:
+      password = graphene.String(required=True)
+      username = graphene.String(required=True)
+
     __doc__ = ObtainJSONWebTokenMixin.__doc__
     user = graphene.Field(UserNode)
     unarchiving = graphene.Boolean(default_value=False)
 
+    token = graphene.Field(graphene.String)
+    refresh_token = graphene.Field(graphene.String)
+
     @classmethod
     def Field(cls, *args, **kwargs):
-        cls._meta.arguments.update({"password": graphene.String(required=True)})
-        for field in app_settings.LOGIN_ALLOWED_FIELDS:
-            cls._meta.arguments.update({field: graphene.String()})
-        return super(graphql_jwt.JSONWebTokenMutation, cls).Field(*args, **kwargs)
+        return super().Field(*args, **kwargs)
 
 
 class ArchiveAccount(
